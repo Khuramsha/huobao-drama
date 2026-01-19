@@ -89,24 +89,16 @@ func (s *StoryboardCompositionService) GetScenesForEpisode(episodeID string) ([]
 		return nil, fmt.Errorf("failed to load storyboards: %w", err)
 	}
 
-	// 获取所有角色（用于匹配角色信息）
-	var characters []models.Character
-	if err := s.db.Where("drama_id = ?", episode.DramaID).Find(&characters).Error; err != nil {
-		s.log.Warnw("Failed to load characters", "error", err)
-	}
-
-	// 创建角色ID到角色信息的映射
-	charIDToInfo := make(map[uint]*models.Character)
-	for i := range characters {
-		charIDToInfo[characters[i].ID] = &characters[i]
-	}
-
 	// 获取所有场景ID
-	var sceneIDs []uint
+	sceneIDSet := make(map[uint]struct{})
 	for _, storyboard := range storyboards {
 		if storyboard.SceneID != nil {
-			sceneIDs = append(sceneIDs, *storyboard.SceneID)
+			sceneIDSet[*storyboard.SceneID] = struct{}{}
 		}
+	}
+	sceneIDs := make([]uint, 0, len(sceneIDSet))
+	for sceneID := range sceneIDSet {
+		sceneIDs = append(sceneIDs, sceneID)
 	}
 
 	// 批量获取场景信息
@@ -166,7 +158,7 @@ func (s *StoryboardCompositionService) GetScenesForEpisode(episodeID string) ([]
 	videoGenTaskMap := make(map[uint]*models.VideoGeneration) // storyboard_id -> processing task
 	if len(storyboardIDs) > 0 {
 		var processingVideoGens []models.VideoGeneration
-		if err := s.db.Where("scene_id IN ? AND status = ?", storyboardIDs, models.VideoStatusProcessing).
+		if err := s.db.Where("storyboard_id IN ? AND status = ?", storyboardIDs, models.VideoStatusProcessing).
 			Order("created_at DESC").
 			Find(&processingVideoGens).Error; err == nil {
 			for _, vg := range processingVideoGens {
