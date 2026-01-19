@@ -1,6 +1,9 @@
 package handlers
 
 import (
+	"errors"
+
+	"github.com/drama-generator/backend/application/services"
 	"github.com/drama-generator/backend/pkg/response"
 	"github.com/gin-gonic/gin"
 )
@@ -18,11 +21,11 @@ func (h *CharacterLibraryHandler) GenerateCharacterImage(c *gin.Context) {
 
 	imageGen, err := h.libraryService.GenerateCharacterImage(characterID, h.imageService, req.Model)
 	if err != nil {
-		if err.Error() == "character not found" {
+		if errors.Is(err, services.ErrCharacterNotFound) {
 			response.NotFound(c, "角色不存在")
 			return
 		}
-		if err.Error() == "unauthorized" {
+		if errors.Is(err, services.ErrUnauthorized) {
 			response.Forbidden(c, "无权限")
 			return
 		}

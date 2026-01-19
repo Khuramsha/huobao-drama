@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"strconv"
 
 	services2 "github.com/drama-generator/backend/application/services"
@@ -78,7 +79,7 @@ func (h *CharacterLibraryHandler) GetLibraryItem(c *gin.Context) {
 
 	item, err := h.libraryService.GetLibraryItem(itemID)
 	if err != nil {
-		if err.Error() == "library item not found" {
+		if errors.Is(err, services2.ErrLibraryItemNotFound) {
 			response.NotFound(c, "角色库项不存在")
 			return
 		}
@@ -96,7 +97,7 @@ func (h *CharacterLibraryHandler) DeleteLibraryItem(c *gin.Context) {
 	itemID := c.Param("id")
 
 	if err := h.libraryService.DeleteLibraryItem(itemID); err != nil {
-		if err.Error() == "library item not found" {
+		if errors.Is(err, services2.ErrLibraryItemNotFound) {
 			response.NotFound(c, "角色库项不存在")
 			return
 		}
@@ -126,11 +127,11 @@ func (h *CharacterLibraryHandler) UploadCharacterImage(c *gin.Context) {
 	}
 
 	if err := h.libraryService.UploadCharacterImage(characterID, req.ImageURL); err != nil {
-		if err.Error() == "character not found" {
+		if errors.Is(err, services2.ErrCharacterNotFound) {
 			response.NotFound(c, "角色不存在")
 			return
 		}
-		if err.Error() == "unauthorized" {
+		if errors.Is(err, services2.ErrUnauthorized) {
 			response.Forbidden(c, "无权限")
 			return
 		}
@@ -157,15 +158,15 @@ func (h *CharacterLibraryHandler) ApplyLibraryItemToCharacter(c *gin.Context) {
 	}
 
 	if err := h.libraryService.ApplyLibraryItemToCharacter(characterID, req.LibraryItemID); err != nil {
-		if err.Error() == "library item not found" {
+		if errors.Is(err, services2.ErrLibraryItemNotFound) {
 			response.NotFound(c, "角色库项不存在")
 			return
 		}
-		if err.Error() == "character not found" {
+		if errors.Is(err, services2.ErrCharacterNotFound) {
 			response.NotFound(c, "角色不存在")
 			return
 		}
-		if err.Error() == "unauthorized" {
+		if errors.Is(err, services2.ErrUnauthorized) {
 			response.Forbidden(c, "无权限")
 			return
 		}
@@ -193,15 +194,15 @@ func (h *CharacterLibraryHandler) AddCharacterToLibrary(c *gin.Context) {
 
 	item, err := h.libraryService.AddCharacterToLibrary(characterID, req.Category)
 	if err != nil {
-		if err.Error() == "character not found" {
+		if errors.Is(err, services2.ErrCharacterNotFound) {
 			response.NotFound(c, "角色不存在")
 			return
 		}
-		if err.Error() == "unauthorized" {
+		if errors.Is(err, services2.ErrUnauthorized) {
 			response.Forbidden(c, "无权限")
 			return
 		}
-		if err.Error() == "character has no image" {
+		if errors.Is(err, services2.ErrCharacterNoImage) {
 			response.BadRequest(c, "角色还没有形象图片")
 			return
 		}
@@ -231,11 +232,11 @@ func (h *CharacterLibraryHandler) UpdateCharacter(c *gin.Context) {
 	}
 
 	if err := h.libraryService.UpdateCharacter(characterID, &req); err != nil {
-		if err.Error() == "character not found" {
+		if errors.Is(err, services2.ErrCharacterNotFound) {
 			response.NotFound(c, "角色不存在")
 			return
 		}
-		if err.Error() == "unauthorized" {
+		if errors.Is(err, services2.ErrUnauthorized) {
 			response.Forbidden(c, "无权限")
 			return
 		}
@@ -259,11 +260,11 @@ func (h *CharacterLibraryHandler) DeleteCharacter(c *gin.Context) {
 
 	if err := h.libraryService.DeleteCharacter(uint(characterID)); err != nil {
 		h.log.Errorw("Failed to delete character", "error", err, "id", characterID)
-		if err.Error() == "character not found" {
+		if errors.Is(err, services2.ErrCharacterNotFound) {
 			response.NotFound(c, "角色不存在")
 			return
 		}
-		if err.Error() == "unauthorized" {
+		if errors.Is(err, services2.ErrUnauthorized) {
 			response.Forbidden(c, "无权删除此角色")
 			return
 		}

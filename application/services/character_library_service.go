@@ -15,6 +15,13 @@ type CharacterLibraryService struct {
 	log *logger.Logger
 }
 
+var (
+	ErrLibraryItemNotFound = errors.New("library item not found")
+	ErrCharacterNotFound   = errors.New("character not found")
+	ErrUnauthorized        = errors.New("unauthorized")
+	ErrCharacterNoImage    = errors.New("character has no image")
+)
+
 func NewCharacterLibraryService(db *gorm.DB, log *logger.Logger) *CharacterLibraryService {
 	return &CharacterLibraryService{
 		db:  db,
@@ -112,7 +119,7 @@ func (s *CharacterLibraryService) GetLibraryItem(itemID string) (*models.Charact
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("library item not found")
+			return nil, ErrLibraryItemNotFound
 		}
 		s.log.Errorw("Failed to get library item", "error", err)
 		return nil, err
@@ -131,7 +138,7 @@ func (s *CharacterLibraryService) DeleteLibraryItem(itemID string) error {
 	}
 
 	if result.RowsAffected == 0 {
-		return errors.New("library item not found")
+		return ErrLibraryItemNotFound
 	}
 
 	s.log.Infow("Library item deleted", "item_id", itemID)
@@ -144,7 +151,7 @@ func (s *CharacterLibraryService) ApplyLibraryItemToCharacter(characterID string
 	var libraryItem models.CharacterLibrary
 	if err := s.db.Where("id = ? ", libraryItemID).First(&libraryItem).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("library item not found")
+			return ErrLibraryItemNotFound
 		}
 		return err
 	}
@@ -153,7 +160,7 @@ func (s *CharacterLibraryService) ApplyLibraryItemToCharacter(characterID string
 	var character models.Character
 	if err := s.db.Where("id = ?", characterID).First(&character).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("character not found")
+			return ErrCharacterNotFound
 		}
 		return err
 	}
@@ -162,7 +169,7 @@ func (s *CharacterLibraryService) ApplyLibraryItemToCharacter(characterID string
 	var drama models.Drama
 	if err := s.db.Where("id = ? ", character.DramaID).First(&drama).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("unauthorized")
+			return ErrUnauthorized
 		}
 		return err
 	}
@@ -183,7 +190,7 @@ func (s *CharacterLibraryService) UploadCharacterImage(characterID string, image
 	var character models.Character
 	if err := s.db.Where("id = ?", characterID).First(&character).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("character not found")
+			return ErrCharacterNotFound
 		}
 		return err
 	}
@@ -192,7 +199,7 @@ func (s *CharacterLibraryService) UploadCharacterImage(characterID string, image
 	var drama models.Drama
 	if err := s.db.Where("id = ? ", character.DramaID).First(&drama).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("unauthorized")
+			return ErrUnauthorized
 		}
 		return err
 	}
@@ -213,7 +220,7 @@ func (s *CharacterLibraryService) AddCharacterToLibrary(characterID string, cate
 	var character models.Character
 	if err := s.db.Where("id = ?", characterID).First(&character).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("character not found")
+			return nil, ErrCharacterNotFound
 		}
 		return nil, err
 	}
@@ -222,14 +229,14 @@ func (s *CharacterLibraryService) AddCharacterToLibrary(characterID string, cate
 	var drama models.Drama
 	if err := s.db.Where("id = ? ", character.DramaID).First(&drama).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("unauthorized")
+			return nil, ErrUnauthorized
 		}
 		return nil, err
 	}
 
 	// 检查是否有图片
 	if character.ImageURL == nil || *character.ImageURL == "" {
-		return nil, fmt.Errorf("角色还没有形象图片")
+		return nil, ErrCharacterNoImage
 	}
 
 	// 创建角色库项
@@ -255,7 +262,7 @@ func (s *CharacterLibraryService) DeleteCharacter(characterID uint) error {
 	var character models.Character
 	if err := s.db.Where("id = ?", characterID).First(&character).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("character not found")
+			return ErrCharacterNotFound
 		}
 		return err
 	}
@@ -264,7 +271,7 @@ func (s *CharacterLibraryService) DeleteCharacter(characterID uint) error {
 	var drama models.Drama
 	if err := s.db.Where("id = ? ", character.DramaID).First(&drama).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("unauthorized")
+			return ErrUnauthorized
 		}
 		return err
 	}
@@ -285,7 +292,7 @@ func (s *CharacterLibraryService) GenerateCharacterImage(characterID string, ima
 	var character models.Character
 	if err := s.db.Where("id = ?", characterID).First(&character).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("character not found")
+			return nil, ErrCharacterNotFound
 		}
 		return nil, err
 	}
@@ -294,7 +301,7 @@ func (s *CharacterLibraryService) GenerateCharacterImage(characterID string, ima
 	var drama models.Drama
 	if err := s.db.Where("id = ? ", character.DramaID).First(&drama).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("unauthorized")
+			return nil, ErrUnauthorized
 		}
 		return nil, err
 	}
@@ -392,7 +399,7 @@ func (s *CharacterLibraryService) UpdateCharacter(characterID string, req interf
 	var character models.Character
 	if err := s.db.Where("id = ?", characterID).First(&character).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("character not found")
+			return ErrCharacterNotFound
 		}
 		return err
 	}
@@ -401,7 +408,7 @@ func (s *CharacterLibraryService) UpdateCharacter(characterID string, req interf
 	var drama models.Drama
 	if err := s.db.Where("id = ? ", character.DramaID).First(&drama).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("unauthorized")
+			return ErrUnauthorized
 		}
 		return err
 	}
