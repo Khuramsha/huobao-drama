@@ -229,12 +229,13 @@ func (s *CharacterLibraryService) AddCharacterToLibrary(characterID string, cate
 
 	// 检查是否有图片
 	if character.ImageURL == nil || *character.ImageURL == "" {
-		return nil, fmt.Errorf("角色还没有形象图片")
+		return nil, errors.New("character has no image")
 	}
 
 	// 创建角色库项
 	charLibrary := &models.CharacterLibrary{
 		Name:        character.Name,
+		Category:    category,
 		ImageURL:    *character.ImageURL,
 		Description: character.Description,
 		SourceType:  "character",
